@@ -12,26 +12,7 @@ namespace HashbrownPackages.Games
 
         public override void Process()
         {
-            ProcessStringTable();
-        }
-
-        public override void ProcessXAnimTree()
-        {
-
-            string path = GetAssetPath("XAnimTrees");
-            XAsset64[] assets = Cordycep.GetXAssets(BlackOps6XAssetType.XANIMTREE);
-            Dictionary<string, string[]> animTress = new Dictionary<string, string[]>();
-            foreach (XAsset64 asset in assets)
-            {
-                BlackOps6XAnimTree xAnimTree = Cordycep.ReadMemory<BlackOps6XAnimTree>(asset.Header);
-                List<string> anims = new List<string>();
-                foreach (var entry in xAnimTree.GetEntries())
-                {
-                    Log.Information("ParentTree: {0}, xanim {1}, node {2}", entry.XAnimTreeParentPtr, entry.XAnimPtr, entry.XAnimNodePtr);
-                }
-                animTress.Add(xAnimTree.Name, anims.ToArray());
-            }
-            File.WriteAllText(Path.Combine(path, "xanimtrees.json"), JsonConvert.SerializeObject(animTress, Formatting.Indented));
+            ProccessNetConstString();
         }
 
         public override void ProcessStringTable()
@@ -68,6 +49,48 @@ namespace HashbrownPackages.Games
 
                 File.WriteAllText(Path.Combine(path, $"{stringTable.Name}.csv"), sb.ToString());
             }
+        }
+
+        public override void ProcessDDL()
+        {
+            string path = GetAssetPath("DDL");
+            XAsset64[] assets = Cordycep.GetXAssets(BlackOps6XAssetType.DDL);
+            foreach (XAsset64 asset in assets)
+            {
+
+            }
+        }
+
+        public override void ProccessNetConstString()
+        {
+            string path = GetAssetPath("NetConstStrings");
+            XAsset64[] assets = Cordycep.GetXAssets(BlackOps6XAssetType.NETCONSTSTRINGS);
+            Dictionary<string, object[]> netConsts = new();
+            foreach (XAsset64 asset in assets)
+            {
+                BlackOps6NetConstString netConst = Cordycep.ReadMemory<BlackOps6NetConstString>(asset.Header);
+                netConsts.Add(netConst.Name, netConst.GetEntries());
+            }
+            File.WriteAllText(Path.Combine(path, "netconststrings.json"), JsonConvert.SerializeObject(netConsts, Formatting.Indented));
+        }
+
+        public override void ProcessXAnimTree()
+        {
+
+            string path = GetAssetPath("XAnimTrees");
+            XAsset64[] assets = Cordycep.GetXAssets(BlackOps6XAssetType.XANIMTREE);
+            Dictionary<string, string[]> animTress = new Dictionary<string, string[]>();
+            foreach (XAsset64 asset in assets)
+            {
+                BlackOps6XAnimTree xAnimTree = Cordycep.ReadMemory<BlackOps6XAnimTree>(asset.Header);
+                List<string> anims = new List<string>();
+                foreach (var entry in xAnimTree.GetEntries())
+                {
+                    Log.Information("ParentTree: {0}, xanim {1}, node {2}", entry.XAnimTreeParentPtr, entry.XAnimPtr, entry.XAnimNodePtr);
+                }
+                animTress.Add(xAnimTree.Name, anims.ToArray());
+            }
+            File.WriteAllText(Path.Combine(path, "xanimtrees.json"), JsonConvert.SerializeObject(animTress, Formatting.Indented));
         }
 
         public override void ProcessExecution()

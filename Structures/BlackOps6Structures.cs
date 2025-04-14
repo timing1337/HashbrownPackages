@@ -259,8 +259,56 @@ namespace HashbrownPackages.Structures
         public BlackOps6XAnim XAnim => Cordycep.ReadMemory<BlackOps6XAnim>(XAnimPtr);
     }
 
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
+    public struct BlackOps6DDL
+    {
+        [FieldOffset(0)]
+        public ulong Hash;
+        [FieldOffset(8)]
+        public nint DDLDefPtr;
+        public string Name => HashPackage.GetHash(Hash, BlackOps6XAssetType.DDL);
+        public BlackOps6DDLDef DDLDef => Cordycep.ReadMemory<BlackOps6DDLDef>(DDLDefPtr);
+    }
 
-public enum BlackOps6XAssetType
+    [StructLayout(LayoutKind.Explicit, Size = 88)]
+    public struct BlackOps6DDLDef
+    {
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 40)]
+    public struct BlackOps6NetConstString
+    {
+        [FieldOffset(0)]
+        public ulong Hash;
+        [FieldOffset(13)]
+        public byte Flag;
+        [FieldOffset(20)]
+        public uint EntriesCount;
+        [FieldOffset(32)]
+        public nint Entries;
+
+        public string Name => HashPackage.GetHash(Hash, BlackOps6XAssetType.NETCONSTSTRINGS);
+
+        public object[] GetEntries()
+        {
+            object[] entries = new object[EntriesCount];
+            for (int i = 0; i < EntriesCount; i++)
+            {
+                nint entryPtr = Cordycep.ReadMemory<nint>(Entries + (nint)i * 8);
+                if (Flag == 1)
+                {
+                    entries[i] = (ulong)entryPtr;
+                }
+                else
+                {
+                    entries[i] = Cordycep.ReadString(entryPtr);
+                }
+            }
+            return entries;
+        }
+    }
+
+    public enum BlackOps6XAssetType
     {
         PHYSICSLIBRARY = 0, // 0x0
         PHYSICSSFXEVENTASSET = 1, // 0x1

@@ -31,11 +31,13 @@ namespace HashbrownPackages.Games
 
         public abstract void Process();
 
+        public abstract void ProcessStringTable();
+        public abstract void ProcessDDL();
+        public abstract void ProccessNetConstString();
         public abstract void ProcessRawFile();
         public abstract void ProcessWeaponAnimPkg();
         public abstract void ProcessGestures();
         public abstract void ProcessExecution();
-        public abstract void ProcessStringTable();
         public abstract void ProcessXAnimTree();
     }
 }
