@@ -1,16 +1,13 @@
 ﻿using HashbrownPackages.Games;
 using Serilog;
-using System;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 
-namespace Mappie
+namespace HashbrownPackages
 {
-
     public struct XAsset64
     {
         public nint Header;
@@ -96,6 +93,9 @@ namespace Mappie
             Log.Information("Strings Address: {address:X}", Cordycep.StringsAddress);
             Log.Information("Game Directory: {directory}", Cordycep.GameDirectory);
             Log.Information("Flag: {flag}", string.Join(", ", Cordycep.Flags));
+
+            HashPackage.Initialize();
+
             switch (gameId)
             {
                 case "YAMYAMOK":
@@ -195,7 +195,7 @@ namespace Mappie
                 address += 1;
             }
 
-            return System.Text.Encoding.ASCII.GetString(bytes.ToArray());
+            return Encoding.UTF8.GetString(bytes.ToArray());
         }
 
         public static unsafe void WriteMemory<T>(nint address, T value) where T : unmanaged

@@ -32,6 +32,9 @@ namespace HashbrownPackages.Games
         public abstract void Process();
 
         public abstract void ProcessRawFile();
-        public abstract void ProcessAnimPkg();
+        public abstract void ProcessWeaponAnimPkg();
+        public abstract void ProcessGestures();
+        public abstract void ProcessExecution();
+        public abstract void ProcessStringTable();
     }
 }

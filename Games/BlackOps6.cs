@@ -1,7 +1,8 @@
 ﻿using HashbrownPackages.Structures;
-using Mappie;
 using System.IO.Compression;
 using Newtonsoft.Json;
+using Serilog;
+using System.Text;
 
 namespace HashbrownPackages.Games
 {
@@ -11,32 +12,108 @@ namespace HashbrownPackages.Games
 
         public override void Process()
         {
-            //ProcessRawFile();
-            ProcessAnimPkg();
+            ProcessRawFile();
+            ProcessWeaponAnimPkg();
+            ProcessGestures();
+            ProcessExecution();
+            ProcessStringTable();
         }
 
-        public override void ProcessAnimPkg()
+        public override void ProcessStringTable()
         {
-            string path = GetAssetPath("AnimationPackages");
+            string path = GetAssetPath("StringTable");
+            XAsset64[] assets = Cordycep.GetXAssets(BlackOps6XAssetType.STRINGTABLE);
+            foreach (XAsset64 asset in assets)
+            {
+                BlackOps6StringTable stringTable = Cordycep.ReadMemory<BlackOps6StringTable>(asset.Header);
+                BlackOps6StringTableColumn[] columns = stringTable.Columns;
+                object[][] spreadsheet = new object[stringTable.RowCount][];
+                for(int i = 0; i < stringTable.RowCount; i++)
+                {
+                    spreadsheet[i] = new object[stringTable.ColumnCount];
+                }
+
+                if (columns.Length == 0) continue;
+                for (int i = 0; i < stringTable.ColumnCount; i++)
+                {
+                    BlackOps6StringTableColumn column = columns[i];
+                    object[] columnData = column.GetColumnData();
+                    for(int j = 0; j < column.RowCount; j++)
+                    {
+                        ushort idx = column.GetRowIndex(j);
+                        object data = columnData[j];
+                        spreadsheet[idx][i] = data;
+                    }
+                }
+
+                StringBuilder sb = new StringBuilder();
+
+                //format spreadsheet
+                for (int i = 0; i < stringTable.RowCount; i++)
+                {
+                    sb.AppendLine(string.Join(",", spreadsheet[i]));
+                }
+
+                File.WriteAllText(Path.Combine(path, $"{stringTable.Name}.csv"), sb.ToString());
+            }
+        }
+
+        public override void ProcessExecution()
+        {
+            string path = GetAssetPath("Executions");
+            XAsset64[] assets = Cordycep.GetXAssets(BlackOps6XAssetType.EXECUTION);
+            Dictionary<string, string[]> executions = new Dictionary<string, string[]>();
+            foreach (XAsset64 asset in assets)
+            {
+                BlackOps6Execution execution = Cordycep.ReadMemory<BlackOps6Execution>(asset.Header);
+            }
+            File.WriteAllText(Path.Combine(path, "executions.json"), JsonConvert.SerializeObject(executions, Formatting.Indented));
+        }
+
+        public override void ProcessWeaponAnimPkg()
+        {
+            string path = GetAssetPath("WeaponAnimationPackages");
             XAsset64[] assets = Cordycep.GetXAssets(BlackOps6XAssetType.ANIMPKG);
             Dictionary<string, string[]> animPkgs = new Dictionary<string, string[]>();
             foreach (XAsset64 asset in assets)
             {
                 BlacksOp6AnimPackage animPkg = Cordycep.ReadMemory<BlacksOp6AnimPackage>(asset.Header);
-                BlackOps6AnimTree animTree = Cordycep.ReadMemory<BlackOps6AnimTree>(animPkg.AnimTree);
-                string[] anims = new string[animTree.AnimationCount];
-
-                for (ulong i = 0; i < animTree.AnimationCount; i++)
+                string[] anims = new string[animPkg.AnimTree.AnimationCount];
+                int i = 0;
+                foreach (var animation in animPkg.AnimTree.GetAnimations())
                 {
-                    nint xanimPtr = Cordycep.ReadMemory<nint>(animTree.Animations + (nint)i * 0x8);
-                    BlackOps6XAnim xanim = Cordycep.ReadMemory<BlackOps6XAnim>(xanimPtr);
-                    anims[i] = $"xanim_{xanim.Hash:X}";
+                    anims[i++] = animation.Name;
                 }
 
-                animPkgs.Add($"xanim_pkg_{animPkg.Hash:X}", anims);
+                animPkgs.Add(animPkg.Name, anims);
             }
 
-            File.WriteAllText(Path.Combine(path, "anim_pkgs.json"), JsonConvert.SerializeObject(animPkgs, Formatting.Indented));
+            File.WriteAllText(Path.Combine(path, "weapon_anim_pkgs.json"), JsonConvert.SerializeObject(animPkgs, Formatting.Indented));
+        }
+        public override unsafe void ProcessGestures()
+        {
+            string path = GetAssetPath("Gestures");
+            XAsset64[] assets = Cordycep.GetXAssets(BlackOps6XAssetType.GESTURE);
+            Dictionary<string, string[]> gestures = new Dictionary<string, string[]>();
+            foreach (XAsset64 asset in assets)
+            {
+                List<string> anims = new();
+                BlackOps6Gesture gesture = Cordycep.ReadMemory<BlackOps6Gesture>(asset.Header);
+
+                foreach (var animation in gesture.GetAnimations())
+                {
+                    anims.Add(animation.Name);
+                }
+
+                foreach(var animation in gesture.GetSecondaryAnimations())
+                {
+                    anims.Add(animation.Name);
+                }
+
+                gestures.Add(gesture.Name, anims.ToArray());
+            }
+
+            File.WriteAllText(Path.Combine(path, "gestures.json"), JsonConvert.SerializeObject(gestures, Formatting.Indented));
         }
 
         public override void ProcessRawFile()
@@ -48,10 +125,9 @@ namespace HashbrownPackages.Games
             {
                 BlackOps6RawFile rawFile = Cordycep.ReadMemory<BlackOps6RawFile>(asset.Header);
 
-                byte[] data = Cordycep.ReadRawMemory(rawFile.Data, rawFile.GetLength());
-                if (rawFile.IsCompressed())
+                if (rawFile.IsCompressed)
                 {
-                    using (var input = new MemoryStream(data))
+                    using (var input = new MemoryStream(rawFile.Data))
                     using (var zlib = new ZLibStream(input, CompressionMode.Decompress))
                     using (var output = new MemoryStream())
                     {
@@ -61,7 +137,7 @@ namespace HashbrownPackages.Games
                 }
                 else
                 {
-                    File.WriteAllBytes(Path.Combine(path, $"{rawFile.Hash:X}"), data);
+                    File.WriteAllBytes(Path.Combine(path, $"{rawFile.Hash:X}"), rawFile.Data);
                 }
             }
         }
