@@ -150,52 +150,33 @@ namespace HashbrownPackages.Structures
             return Cordycep.ReadMemory<ushort>(RowPtr + (j * 2));
         }
 
-        public object[] GetColumnData()
+        public object GetRowData(int j)
         {
-            object[] data = new object[RowCount];
-            if (Type == 5 || ((Type - 6) & 0xFB) == 0 || Type == 7 || Type == 8)
+            ushort idx = GetRowIndex(j);
+            switch (Type)
             {
-                for (int i = 0; i < RowCount; i++)
-                {
-                    data[i] = HashPackage.GetHash(Cordycep.ReadMemory<ulong>(DataPtr + (i * 8)));
-                }
-            }else if(Type == 2)
-            {
-                for (int i = 0; i < RowCount; i++)
-                {
-                    data[i] = Cordycep.ReadMemory<ulong>(DataPtr + (i * 8));
-                }
+                case 1:
+                    nint stringPtr = Cordycep.ReadMemory<nint>(DataPtr + (idx * 8));
+                    if(stringPtr == 0)
+                        return "";
+                    return Cordycep.ReadString(stringPtr);
+                case 2:
+                    return Cordycep.ReadMemory<long>(DataPtr + (idx * 8));
+                case 3:
+                    return Cordycep.ReadMemory<float>(DataPtr + (idx * 4));
+                case 4:
+                    return Cordycep.ReadMemory<bool>(DataPtr + idx);
+                case 5:
+                case 6:
+                case 7:
+                case 9:
+                    ulong hash = Cordycep.ReadMemory<ulong>(DataPtr + (idx * 8));
+                    return HashPackage.GetHash(hash);
+                case 8:
+                    return Cordycep.ReadMemory<uint>(DataPtr + (idx * 4));
+                default:
+                    return 0;
             }
-            else if (Type == 9)
-            {
-                for (int i = 0; i < RowCount; i++)
-                {
-                    data[i] = Cordycep.ReadMemory<uint>(DataPtr + (i * 4));
-                }
-            }
-            else if (Type == 4)
-            {
-                for (int i = 0; i < RowCount; i++)
-                {
-                    data[i] = Cordycep.ReadMemory<byte>(DataPtr + i);
-                }
-            }
-            else if (Type == 3)
-            {
-                for (int i = 0; i < RowCount; i++)
-                {
-                    data[i] = Cordycep.ReadMemory<float>(DataPtr + (i * 4));
-                }
-            }
-            else
-            {
-                for (int i = 0; i < RowCount; i++)
-                {
-                    nint stringPtr = Cordycep.ReadMemory<nint>(DataPtr + (i * 8));
-                    data[i] = stringPtr != 0 ? Cordycep.ReadString(stringPtr) : "";
-                }
-            }
-            return data;
         }
     }
 
@@ -238,7 +219,48 @@ namespace HashbrownPackages.Structures
         public BlackOps6XAnim XAnim2 => Cordycep.ReadMemory<BlackOps6XAnim>(XAnim2Ptr);
     }
 
-    public enum BlackOps6XAssetType
+    [StructLayout(LayoutKind.Explicit, Size = 40)]
+    public struct BlackOps6XAnimTree
+    {
+        [FieldOffset(0)]
+        public ulong Hash;
+        [FieldOffset(12)]
+        public uint Blob1Size;
+        [FieldOffset(16)]
+        public nint Blob1Ptr;
+        [FieldOffset(24)]
+        public uint EntriesCount;
+        [FieldOffset(32)]
+        public nint Entries;
+
+        public string Name => HashPackage.GetHash(Hash, BlackOps6XAssetType.XANIMTREE);
+        public BlackOps6XAnimTreeEntry[] GetEntries()
+        {
+            BlackOps6XAnimTreeEntry[] entries = new BlackOps6XAnimTreeEntry[EntriesCount];
+            for (uint i = 0; i < EntriesCount; i++)
+            {
+                entries[i] = Cordycep.ReadMemory<BlackOps6XAnimTreeEntry>(Entries + (nint)i * 56);
+            }
+            return entries;
+        }
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 56)]
+    public struct BlackOps6XAnimTreeEntry
+    {
+        [FieldOffset(8)]
+        public nint XAnimTreeParentPtr;
+        [FieldOffset(24)]
+        public nint XAnimPtr;
+        [FieldOffset(40)]
+        public nint XAnimNodePtr;
+
+        public BlackOps6XAnimTree XAnimTreeParent => Cordycep.ReadMemory<BlackOps6XAnimTree>(XAnimTreeParentPtr);
+        public BlackOps6XAnim XAnim => Cordycep.ReadMemory<BlackOps6XAnim>(XAnimPtr);
+    }
+
+
+public enum BlackOps6XAssetType
     {
         PHYSICSLIBRARY = 0, // 0x0
         PHYSICSSFXEVENTASSET = 1, // 0x1

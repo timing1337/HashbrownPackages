@@ -81,20 +81,17 @@ namespace HashbrownPackages
                             return;
                         }
                         BinaryReader decompressedReader = new BinaryReader(new MemoryStream(decompressed));
-                        lock (Hashes)
+                        for (int j = 0; j < count; j++)
                         {
-                            for (int j = 0; j < count; j++)
+                            ulong hash = decompressedReader.ReadUInt64() & 0xFFFFFFFFFFFFFFF;
+                            //Read null terminated string
+                            StringBuilder sb = new StringBuilder();
+                            char c;
+                            while ((c = decompressedReader.ReadChar()) != '\0')
                             {
-                                ulong hash = decompressedReader.ReadUInt64() & 0xFFFFFFFFFFFFFFF;
-                                //Read null terminated string
-                                StringBuilder sb = new StringBuilder();
-                                char c;
-                                while ((c = decompressedReader.ReadChar()) != '\0')
-                                {
-                                    sb.Append(c);
-                                }
-                                Hashes[hash] = sb.ToString();
+                                sb.Append(c);
                             }
+                            Hashes[hash] = sb.ToString();
                         }
                     }
                 }

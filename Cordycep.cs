@@ -186,16 +186,18 @@ namespace HashbrownPackages
 
         public static unsafe string ReadString(nint address)
         {
-            List<byte> bytes = new List<byte>();
-            while (true)
+            var buffer = new byte[256];
+            int length = 0;
+
+            for (int i = 0; i < 256; i++)
             {
-                byte c = ReadMemory<byte>(address);
-                if (c == 0x00) break;
-                bytes.Add(c);
-                address += 1;
+                byte b = ReadMemory<byte>(address + i);
+                if (b == 0) break;
+                if (b < 0x20 || b > 0x7E) return ""; //? ok this is malformed
+                buffer[length++] = b;
             }
 
-            return Encoding.UTF8.GetString(bytes.ToArray());
+            return Encoding.ASCII.GetString(buffer, 0, length);
         }
 
         public static unsafe void WriteMemory<T>(nint address, T value) where T : unmanaged

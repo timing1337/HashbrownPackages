@@ -12,11 +12,26 @@ namespace HashbrownPackages.Games
 
         public override void Process()
         {
-            ProcessRawFile();
-            ProcessWeaponAnimPkg();
-            ProcessGestures();
-            ProcessExecution();
             ProcessStringTable();
+        }
+
+        public override void ProcessXAnimTree()
+        {
+
+            string path = GetAssetPath("XAnimTrees");
+            XAsset64[] assets = Cordycep.GetXAssets(BlackOps6XAssetType.XANIMTREE);
+            Dictionary<string, string[]> animTress = new Dictionary<string, string[]>();
+            foreach (XAsset64 asset in assets)
+            {
+                BlackOps6XAnimTree xAnimTree = Cordycep.ReadMemory<BlackOps6XAnimTree>(asset.Header);
+                List<string> anims = new List<string>();
+                foreach (var entry in xAnimTree.GetEntries())
+                {
+                    Log.Information("ParentTree: {0}, xanim {1}, node {2}", entry.XAnimTreeParentPtr, entry.XAnimPtr, entry.XAnimNodePtr);
+                }
+                animTress.Add(xAnimTree.Name, anims.ToArray());
+            }
+            File.WriteAllText(Path.Combine(path, "xanimtrees.json"), JsonConvert.SerializeObject(animTress, Formatting.Indented));
         }
 
         public override void ProcessStringTable()
@@ -37,12 +52,9 @@ namespace HashbrownPackages.Games
                 for (int i = 0; i < stringTable.ColumnCount; i++)
                 {
                     BlackOps6StringTableColumn column = columns[i];
-                    object[] columnData = column.GetColumnData();
                     for(int j = 0; j < column.RowCount; j++)
                     {
-                        ushort idx = column.GetRowIndex(j);
-                        object data = columnData[j];
-                        spreadsheet[idx][i] = data;
+                        spreadsheet[j][i] = column.GetRowData(j);
                     }
                 }
 
