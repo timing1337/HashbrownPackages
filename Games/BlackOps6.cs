@@ -12,7 +12,34 @@ namespace HashbrownPackages.Games
 
         public override void Process()
         {
-            ProccessNetConstString();
+            ProcessXCamData();
+        }
+
+        public override void ProcessXCamData()
+        {
+            string path = GetAssetPath("XCams");
+            XAsset64[] assets = Cordycep.GetXAssets(BlackOps6XAssetType.XCAM);
+            foreach (XAsset64 asset in assets)
+            {
+                Dictionary<string, BlackOps6XCamFrame[]> cameras = new();
+                BlackOps6XCam xCam = Cordycep.ReadMemory<BlackOps6XCam>(asset.Header);
+                bool added = true;
+                foreach (var camera in xCam.GetCameras())
+                {
+                    if (camera.Name.Contains("victim"))
+                    {
+                        added = false;
+                        break;
+                    }
+                    cameras.Add(camera.Name, camera.GetAnimationFrames());
+                }
+                if(!added) continue;
+                File.WriteAllText(Path.Combine(path, $"{xCam.Name}.json"), JsonConvert.SerializeObject(cameras, Formatting.Indented));
+            }
+        }
+
+        public override void ProcessSoundGlobalNameTable()
+        {
         }
 
         public override void ProcessStringTable()

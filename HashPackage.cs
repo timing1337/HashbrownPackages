@@ -1,4 +1,5 @@
 ﻿using K4os.Compression.LZ4;
+using Newtonsoft.Json;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -42,6 +43,7 @@ namespace HashbrownPackages
             Stopwatch sw = new Stopwatch();
             sw.Start();
             string[] files = Directory.GetFiles(path, "*.wni");
+            List<string> test = new List<string>();
             foreach (string file in files)
             {
                 BinaryReader reader = new BinaryReader(new FileStream(file, FileMode.Open));
@@ -92,10 +94,16 @@ namespace HashbrownPackages
                                 sb.Append(c);
                             }
                             Hashes[hash] = sb.ToString();
+                            if (Hashes[hash].StartsWith("j_") || Hashes[hash].StartsWith("tag_origin"))
+                            {
+                                if(!test.Contains(Hashes[hash])) test.Add(Hashes[hash]);
+                            }
                         }
                     }
                 }
             }
+
+            File.WriteAllText(Path.Combine(path, "hashes.json"), JsonConvert.SerializeObject(test, Formatting.Indented));
             sw.Stop();
             Log.Information("Hash package loaded in {time}ms", sw.ElapsedMilliseconds);
         }

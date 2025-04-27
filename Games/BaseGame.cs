@@ -39,5 +39,9 @@ namespace HashbrownPackages.Games
         public abstract void ProcessGestures();
         public abstract void ProcessExecution();
         public abstract void ProcessXAnimTree();
+
+        public abstract void ProcessSoundGlobalNameTable();
+
+        public abstract void ProcessXCamData();
     }
 }

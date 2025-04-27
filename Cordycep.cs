@@ -1,5 +1,6 @@
 ﻿using HashbrownPackages.Games;
 using Serilog;
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -43,6 +44,7 @@ namespace HashbrownPackages
                 .WriteTo.Console()
                 .CreateLogger();
 
+            HashPackage.Initialize();
             var processes = Process.GetProcessesByName("Cordycep.CLI");
             if (processes.Length == 0)
             {
@@ -94,8 +96,6 @@ namespace HashbrownPackages
             Log.Information("Game Directory: {directory}", Cordycep.GameDirectory);
             Log.Information("Flag: {flag}", string.Join(", ", Cordycep.Flags));
 
-            HashPackage.Initialize();
-
             switch (gameId)
             {
                 case "YAMYAMOK":
@@ -110,6 +110,20 @@ namespace HashbrownPackages
             }
         }
 
+        public static ulong HashAsset(string data)
+        {
+            data = data.ToLower();
+            ulong result = 0x47F5817A5EF961BA;
+            for (int i = 0; i < data.Length; i++)
+            {
+                ulong value = data[i];
+                if (value == '\\')
+                    value = '/';
+                result = 0x100000001B3 * (value ^ result);
+            }
+            return result & 0x7FFFFFFFFFFFFFFF;
+        }
+        
         public static unsafe void EnumerableAssetPool<TEnum>(TEnum poolIdx, Action<XAsset64> action)
         {
             nint poolPtr = (nint)(PoolsAddress + Convert.ToUInt32(poolIdx) * sizeof(XAssetPool64));

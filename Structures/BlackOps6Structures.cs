@@ -2,6 +2,7 @@
 using Serilog;
 using System;
 using System.Data.Common;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace HashbrownPackages.Structures
@@ -306,6 +307,105 @@ namespace HashbrownPackages.Structures
             }
             return entries;
         }
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 24)]
+    public struct BlackOps6SoundGlobalNameTable
+    {
+        [FieldOffset(0)]
+        public uint Entries2Count;
+        [FieldOffset(4)]
+        public uint Entries1Count;
+        [FieldOffset(8)]
+        public nint Entries1Ptr;
+        [FieldOffset(16)]
+        public nint Entries2Ptr;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 144)]
+    public struct BlackOps6XCam
+    {
+        [FieldOffset(0)]
+        public ulong Hash;
+        [FieldOffset(8)]
+        public nint ParentSceneNamePtr;
+        [FieldOffset(28)]
+        public uint CameraCount;
+        [FieldOffset(32)]
+        public uint Frames;
+        [FieldOffset(72)]
+        public nint TargetModelBoneRootsPtr;
+        [FieldOffset(80)]
+        public nint Cameras;
+        public string Name => HashPackage.GetHash(Hash, BlackOps6XAssetType.XCAM);
+        public string ParentSceneName => Cordycep.ReadString(ParentSceneNamePtr);
+        
+        public BlackOps6XCamTargetModel TargetModelBoneRoots => Cordycep.ReadMemory<BlackOps6XCamTargetModel>(TargetModelBoneRootsPtr);
+
+        public BlackOps6XCamCamera[] GetCameras()
+        {
+            BlackOps6XCamCamera[] cameras = new BlackOps6XCamCamera[CameraCount];
+            for (uint i = 0; i < CameraCount; i++)
+            {
+                cameras[i] = Cordycep.ReadMemory<BlackOps6XCamCamera>(Cameras + (nint)i * 40);
+            }
+            return cameras;
+        }
+
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 40)]
+    public struct BlackOps6XCamCamera
+    {
+        [FieldOffset(0)]
+        public nint NamePtr;
+        [FieldOffset(12)]
+        public uint Frames;
+        [FieldOffset(24)]
+        public nint AnimationFramesPtr;
+
+        public string Name => Cordycep.ReadString(NamePtr);
+
+        public BlackOps6XCamFrame[] GetAnimationFrames()
+        {
+            BlackOps6XCamFrame[] frames = new BlackOps6XCamFrame[Frames];
+            for (uint i = 0; i < Frames; i++)
+            {
+                frames[i] = Cordycep.ReadMemory<BlackOps6XCamFrame>(AnimationFramesPtr + (nint)i * 48);
+            }
+            return frames;
+        }
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 24)]
+    public struct BlackOps6XCamTargetModel
+    {
+        [FieldOffset(0)]
+        public nint Name;
+        [FieldOffset(8)]
+        public uint Frames;
+        [FieldOffset(16)]
+        public nint AnimationFrames;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 24)]
+    public struct BlackOps6XCamTargetModelFrame
+    {
+        [FieldOffset(0)]
+        public Vector3 Offset;
+        [FieldOffset(12)]
+        public Vector4 AxisQuat;
+    }
+
+    public struct BlackOps6XCamFrame
+    {
+        public int FrameNum;
+        public Vector3 Origin;
+        public Vector4 AngleQuat;
+        public float Fov;
+        public float FocalLength;
+        public float FocalDistance;
+        public float FStop;
     }
 
     public enum BlackOps6XAssetType
